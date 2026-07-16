@@ -113,16 +113,18 @@
                                 <span class="text-xs text-morandi-mutedLight dark:text-morandi-mutedDark font-medium">台股加權指數 (TAIEX)</span>
                                 <h2 class="text-3xl font-extrabold tracking-tight mt-1">{{ marketIndex.points.toLocaleString('zh-TW', {minimumFractionDigits: 2}) }}</h2>
                             </div>
-                            <span class="px-2.5 py-1 text-xs rounded-full font-bold flex items-center gap-1 bg-emerald-500/10 text-emerald-500">
-                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
-                                +{{ marketIndex.changePercent }}%
+                            <span :class="marketIndex.changePercent >= 0 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'" class="px-2.5 py-1 text-xs rounded-full font-bold flex items-center gap-1">
+                                <i :data-lucide="marketIndex.changePercent >= 0 ? 'arrow-up-right' : 'arrow-down-right'" class="w-3.5 h-3.5"></i>
+                                {{ marketIndex.changePercent >= 0 ? '+' : '' }}{{ marketIndex.changePercent }}%
                             </span>
                         </div>
                         
                         <div class="mt-4 flex gap-4 text-xs">
                             <div>
                                 <span class="text-morandi-mutedLight dark:text-morandi-mutedDark">漲跌</span>
-                                <p class="font-bold text-emerald-500">+{{ marketIndex.change }}</p>
+                                <p :class="marketIndex.change >= 0 ? 'text-red-500' : 'text-emerald-500'" class="font-bold">
+                                    {{ marketIndex.change >= 0 ? '+' : '' }}{{ marketIndex.change }}
+                                </p>
                             </div>
                             <div>
                                 <span class="text-morandi-mutedLight dark:text-morandi-mutedDark">成交量</span>
@@ -130,31 +132,99 @@
                             </div>
                             <div>
                                 <span class="text-morandi-mutedLight dark:text-morandi-mutedDark">今日最高</span>
-                                <p class="font-bold text-morandi-accent">{{ marketIndex.high }}</p>
+                                <p class="font-bold text-red-500">{{ marketIndex.high }}</p>
                             </div>
                             <div>
                                 <span class="text-morandi-mutedLight dark:text-morandi-mutedDark">今日最低</span>
-                                <p class="font-bold text-morandi-rose">{{ marketIndex.low }}</p>
+                                <p class="font-bold text-emerald-500">{{ marketIndex.low }}</p>
                             </div>
                         </div>
 
-                        <!-- Mini Trend Visualization -->
-                        <div class="mt-4 pt-4 border-t border-zinc-200/50 dark:border-zinc-700/50">
-                            <div class="flex justify-between text-[10px] text-morandi-mutedLight dark:text-morandi-mutedDark mb-1">
-                                <span>09:00 開盤</span>
-                                <span>13:30 收盤</span>
+                        <!-- Vue Interactive Index HUD overlay (hover details) -->
+                        <div v-if="activeIndexItem" class="p-2.5 bg-zinc-100/50 dark:bg-zinc-800/40 rounded-xl text-[10px] font-mono grid grid-cols-4 gap-y-1 gap-x-1 border border-zinc-200/20 dark:border-zinc-800/30 mt-3">
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">日期</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeIndexItem.date }}</span>
                             </div>
-                            <div class="h-10 w-full flex items-end gap-1.5 pt-2">
-                                <div v-for="(pt, idx) in marketIndex.history" :key="idx" 
-                                     :style="{ height: `${((pt - 21900) / 350) * 100}%` }"
-                                     class="flex-1 bg-emerald-500/40 dark:bg-emerald-500/50 rounded-t-sm hover:bg-emerald-500 transition-all duration-300 relative group">
-                                     <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[9px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10">{{pt}}</span>
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">開盤</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeIndexItem.open ? activeIndexItem.open.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">最高</span>
+                                <span class="font-bold text-red-500">{{ activeIndexItem.high ? activeIndexItem.high.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">最低</span>
+                                <span class="font-bold text-emerald-500">{{ activeIndexItem.low ? activeIndexItem.low.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">收盤</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeIndexItem.close ? activeIndexItem.close.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[8px]">單日漲跌</span>
+                                <span :class="activeIndexItem.close >= activeIndexItem.open ? 'text-red-500' : 'text-emerald-500'" class="font-bold">
+                                    {{ activeIndexItem.close >= activeIndexItem.open ? '+' : '' }}{{ activeIndexItem.open ? (activeIndexItem.close - activeIndexItem.open).toFixed(1) : '0' }}
+                                </span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-zinc-400 block text-[8px]">成交量</span>
+                                <span class="font-bold text-[#7F91A4] dark:text-zinc-300">{{ activeIndexItem.volume }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Micro Index Sparkline Graph upgraded to full Interactive K-Line -->
+                        <div class="mt-4 pt-4 border-t border-zinc-200/50 dark:border-zinc-700/50" id="index-trend-section">
+                            <div class="flex justify-between text-[10px] text-morandi-mutedLight dark:text-morandi-mutedDark mb-2">
+                                <span>TAIEX 大盤 30 日走勢 K線圖</span>
+                                <span>漲：紅 / 跌：綠</span>
+                            </div>
+
+                            <!-- SVG Index Candlestick Graphic -->
+                            <div v-if="indexKlineData.length > 0" class="relative bg-zinc-50 dark:bg-zinc-800/10 p-2 rounded-2xl border border-zinc-200/10 mt-1">
+                                <svg class="w-full overflow-visible h-28" viewBox="0 0 400 100" preserveAspectRatio="none">
+                                    <!-- Grid Lines -->
+                                    <line x1="10" :y1="getIndexY(indexPriceBounds.max)" x2="345" :y2="getIndexY(indexPriceBounds.max)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+                                    <line x1="10" :y1="getIndexY((indexPriceBounds.max + indexPriceBounds.min) / 2)" x2="345" :y2="getIndexY((indexPriceBounds.max + indexPriceBounds.min) / 2)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+                                    <line x1="10" :y1="getIndexY(indexPriceBounds.min)" x2="345" :y2="getIndexY(indexPriceBounds.min)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+
+                                    <!-- Reference Labels -->
+                                    <text x="350" :y="getIndexY(indexPriceBounds.max) + 3" fill="#71717a" class="text-[7px] font-mono">{{ indexPriceBounds.max.toFixed(0) }}</text>
+                                    <text x="350" :y="getIndexY((indexPriceBounds.max + indexPriceBounds.min) / 2) + 3" fill="#71717a" class="text-[7px] font-mono">{{ ((indexPriceBounds.max + indexPriceBounds.min) / 2).toFixed(0) }}</text>
+                                    <text x="350" :y="getIndexY(indexPriceBounds.min) + 3" fill="#71717a" class="text-[7px] font-mono">{{ indexPriceBounds.min.toFixed(0) }}</text>
+
+                                    <!-- Candlesticks -->
+                                    <g v-for="(d, idx) in indexKlineData" :key="'idx-candle-'+idx">
+                                        <line :x1="getIndexX(idx)" :y1="getIndexY(d.high)" :x2="getIndexX(idx)" :y2="getIndexY(d.low)" :stroke="d.close >= d.open ? '#EF4444' : '#10B981'" stroke-width="1.2" />
+                                        <rect :x="getIndexX(idx) - 2.5" :y="Math.min(getIndexY(d.open), getIndexY(d.close))" width="5" :height="Math.max(1.5, Math.abs(getIndexY(d.open) - getIndexY(d.close)))" :fill="d.close >= d.open ? '#EF4444' : '#10B981'" :stroke="d.close >= d.open ? '#EF4444' : '#10B981'" stroke-width="0.5" />
+                                    </g>
+
+                                    <!-- MA Lines -->
+                                    <path v-if="indexMa5Path" :d="indexMa5Path" fill="none" stroke="#C5A880" stroke-width="1.2" stroke-linecap="round" />
+                                    <path v-if="indexMa10Path" :d="indexMa10Path" fill="none" stroke="#C0A0A0" stroke-width="1.2" stroke-linecap="round" />
+                                    <path v-if="indexMa20Path" :d="indexMa20Path" fill="none" stroke="#7F91A4" stroke-width="1.2" stroke-linecap="round" />
+
+                                    <!-- Tracker line -->
+                                    <g v-if="activeIndexHoverIdx !== null && indexKlineData[activeIndexHoverIdx]">
+                                        <line :x1="getIndexX(activeIndexHoverIdx)" y1="5" :x2="getIndexX(activeIndexHoverIdx)" y2="95" stroke="#71717a" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3,3" />
+                                        <circle :cx="getIndexX(activeIndexHoverIdx)" :cy="getIndexY(indexKlineData[activeIndexHoverIdx].close)" r="3" :fill="indexKlineData[activeIndexHoverIdx].close >= indexKlineData[activeIndexHoverIdx].open ? '#EF4444' : '#10B981'" />
+                                    </g>
+
+                                    <!-- Mouse Tracker areas -->
+                                    <rect v-for="(d, idx) in indexKlineData" :key="'idx-trig-'+idx" :x="getIndexX(idx) - 5" y="5" width="10" height="90" fill="transparent" class="cursor-crosshair" @mouseenter="activeIndexHoverIdx = idx" @mouseleave="activeIndexHoverIdx = null" @touchstart="activeIndexHoverIdx = idx" />
+                                </svg>
+                                <div class="flex justify-between px-2 text-[7px] font-mono text-zinc-400 mt-1">
+                                    <span>{{ indexKlineData[0]?.date }}</span>
+                                    <span>左右滑動/輕觸查看每日 TAIEX 數值</span>
+                                    <span>{{ indexKlineData[indexKlineData.length - 1]?.date }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Top 10 Gainers List -->
+                <!-- Top 10 Gainers List -->
                     <section class="space-y-3">
                         <div class="flex justify-between items-center px-1">
                             <h3 class="text-sm font-bold flex items-center gap-1.5 text-morandi-rose">
@@ -647,6 +717,7 @@
                     selectedStockForKline: null,
                     klineData: [],
                     hoverIdx: null,
+                    activeIndexHoverIdx: null,
                     
                     marketIndex: {"name":"台股加權指數 (TAIEX)","points":22145.5,"change":185.3,"changePercent":0.84,"volume":"3,842 億","high":22210.8,"low":21980.2,"history":[21980,22010,21995,22050,22110,22090,22145.5]},
                     stocks: [{"id":"2330","name":"台積電","code":"2330","price":985,"change":25,"changePercent":2.6,"category":"半導體","recommendation":"強烈推薦","type":"長期","buyPrice":950,"sellPrice":1050,"tp":1100,"info":"AI 晶片需求持續爆發，先進製程產能供不應求，CoWoS 封裝產能翻倍增長，長期護城河極深，建議逢低分批布局。"},{"id":"2317","name":"鴻海","code":"2317","price":202.5,"change":4.5,"changePercent":2.27,"category":"機器人股","recommendation":"推薦買入","type":"長期","buyPrice":195,"sellPrice":220,"tp":240,"info":"GB200 伺服器出貨主力，加上人形機器人與電動車長線佈局，營收動能強勁。"},{"id":"2454","name":"聯發科","code":"2454","price":1220,"change":30,"changePercent":2.52,"category":"IC設計","recommendation":"推薦買入","type":"波段","buyPrice":1180,"sellPrice":1300,"tp":1400,"info":"旗艦晶片天璣 9400 採用台積電 3 奈米製程，效能強大，在端側 AI 手機市場佔有率領先。"},{"id":"2382","name":"廣達","code":"2382","price":298.5,"change":11.5,"changePercent":4.01,"category":"AI概念股","recommendation":"強烈推薦","type":"長期","buyPrice":280,"sellPrice":320,"tp":350,"info":"AI 伺服器整機出貨龍頭，訂單能見度已達 2026 年，毛利率及營益率雙升。"},{"id":"2359","name":"所羅門","code":"2359","price":158.5,"change":14,"changePercent":9.69,"category":"機器人股","recommendation":"強烈推薦","type":"當沖","buyPrice":145,"sellPrice":165,"tp":180,"info":"搭載 AI 視覺的 3D 視覺與機器人應用，與 NVIDIA 深度合作，市場題材極佳，波段動能非常強。"},{"id":"3231","name":"緯創","code":"3231","price":114.5,"change":4.5,"changePercent":4.09,"category":"AI概念股","recommendation":"推薦買入","type":"當沖","buyPrice":108,"sellPrice":120,"tp":135,"info":"AI 晶片基板主力供應商，下半年伺服器出貨量顯著爬坡，成交量大，極適合日內當沖或短波段。"},{"id":"2618","name":"長榮航","code":"2618","price":36.8,"change":1.2,"changePercent":3.37,"category":"航空股","recommendation":"推薦買入","type":"當沖","buyPrice":35,"sellPrice":39,"tp":42,"info":"受惠於暑期旅遊旺季與高收益高科技貨運需求，客貨運雙亮眼，油價回落有助毛利表現。"},{"id":"2610","name":"華航","code":"2610","price":22.4,"change":0.65,"changePercent":2.99,"category":"航空股","recommendation":"中性觀望","type":"當沖","buyPrice":21.5,"sellPrice":23.5,"tp":25,"info":"航空貨運迎來旺季，客運載客率維持高檔。短線股價相對穩定，可利用區間來回當沖。"},{"id":"3260","name":"威剛","code":"3260","price":94.2,"change":3.8,"changePercent":4.2,"category":"記憶體股","recommendation":"推薦買入","type":"波段","buyPrice":90,"sellPrice":105,"tp":115,"info":"DRAM 與 NAND Flash 現貨價格止跌反彈，庫存回補需求升溫，下半年獲利看俏。"},{"id":"2344","name":"華邦電","code":"2344","price":24.1,"change":0.85,"changePercent":3.66,"category":"記憶體股","recommendation":"中性觀望","type":"當沖","buyPrice":23.2,"sellPrice":25.5,"tp":27,"info":"利基型記憶體供需改善，邊緣 AI 帶動 NOR Flash 規格升級，股價基期低。"},{"id":"2464","name":"盟立","code":"2464","price":88.6,"change":6.1,"changePercent":7.39,"category":"機器人股","recommendation":"推薦買入","type":"當沖","buyPrice":82,"sellPrice":92,"tp":100,"info":"浸沒式散熱與物流自動化系統訂單豐沛，機器人相關關節減速器題材發酵，具備強勢動能。"},{"id":"2408","name":"南亞科","code":"2408","price":52.3,"change":1.1,"changePercent":2.15,"category":"記憶體股","recommendation":"中性觀望","type":"長期","buyPrice":50,"sellPrice":58,"tp":65,"info":"1B 奈製程逐步量產，高階 DDR5 生產規模擴大，最壞時間已過，長線價值浮現。"},{"id":"9958","name":"世紀鋼","code":"9958","price":228,"change":-2,"changePercent":-0.87,"category":"綠能股","recommendation":"中性觀望","type":"長期","buyPrice":220,"sellPrice":245,"tp":270,"info":"離岸風電 3-2 期水下基礎訂單能見度高，但短線股價處於季線整理，建議站穩月線再作加碼。"},{"id":"3037","name":"欣興","code":"3037","price":164.5,"change":5.5,"changePercent":3.46,"category":"載板","recommendation":"推薦買入","type":"當沖","buyPrice":158,"sellPrice":172,"tp":185,"info":"高階 ABF 載板訂單受惠於 AI 晶片出貨。當前股價自低檔放量反彈，當沖波動性適中。"},{"id":"2603","name":"長榮","code":"2603","price":188,"change":4.5,"changePercent":2.45,"category":"航運股","recommendation":"推薦買入","type":"波段","buyPrice":182,"sellPrice":198,"tp":210,"info":"地中海與紅海航線運價居高不下，第三季美西美東航線旺季加持，盈餘獲利優於市場預期。"}],
@@ -694,6 +765,33 @@
                         }
                     }
                     return favorited;
+                },
+                indexKlineData() {
+                    return this.marketIndex.kline || [];
+                },
+                activeIndexItem() {
+                    if (!this.indexKlineData || this.indexKlineData.length === 0) return null;
+                    if (this.activeIndexHoverIdx !== null && this.activeIndexHoverIdx < this.indexKlineData.length) {
+                        return this.indexKlineData[this.activeIndexHoverIdx];
+                    }
+                    return this.indexKlineData[this.indexKlineData.length - 1];
+                },
+                indexPriceBounds() {
+                    if (this.indexKlineData.length === 0) return { min: 21000, max: 23000 };
+                    const prices = this.indexKlineData.flatMap(d => [d.open, d.close, d.high, d.low, d.ma5, d.ma10, d.ma20].filter(v => v !== null && v !== undefined));
+                    const max = Math.max(...prices);
+                    const min = Math.min(...prices);
+                    const range = max - min || 100;
+                    return { min: Math.max(0, min - range * 0.05), max: max + range * 0.05 };
+                },
+                indexMa5Path() {
+                    return this.generateIndexMAPath('ma5');
+                },
+                indexMa10Path() {
+                    return this.generateIndexMAPath('ma10');
+                },
+                indexMa20Path() {
+                    return this.generateIndexMAPath('ma20');
                 },
                 activeKlineItem() {
                     if (!this.selectedStockForKline || this.klineData.length === 0) return {};
@@ -860,6 +958,28 @@
                     this.$nextTick(() => {
                         lucide.createIcons();
                     });
+                },
+                getIndexX(idx) {
+                    const chartWidth = 345;
+                    const paddingLeft = 10;
+                    return paddingLeft + (idx / (this.indexKlineData.length - 1 || 1)) * (chartWidth - paddingLeft);
+                },
+                getIndexY(val) {
+                    const chartHeight = 80;
+                    const min = this.indexPriceBounds.min;
+                    const max = this.indexPriceBounds.max;
+                    return chartHeight - ((val - min) / (max - min || 1)) * (chartHeight - 10);
+                },
+                generateIndexMAPath(key) {
+                    if (this.indexKlineData.length === 0) return '';
+                    return this.indexKlineData
+                        .map((d, idx) => {
+                            if (d[key] === null || d[key] === undefined) return '';
+                            const isStart = idx === 0 || this.indexKlineData[idx - 1][key] === null || this.indexKlineData[idx - 1][key] === undefined;
+                            return (isStart ? 'M' : 'L') + ' ' + this.getIndexX(idx) + ' ' + this.getIndexY(d[key]);
+                        })
+                        .filter(Boolean)
+                        .join(' ');
                 },
                 getX(idx) {
                     const chartWidth = 345;

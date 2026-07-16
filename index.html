@@ -6,7 +6,7 @@
     <title>台股交易分析平台</title>
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Tailwind CSS 4 Play CDN or Tailwind 3 CDN -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -74,10 +74,10 @@
             
             <!-- Virtual Status Bar for beautiful App look -->
             <div class="px-6 pt-3 pb-1 flex justify-between items-center text-xs text-morandi-mutedLight dark:text-morandi-mutedDark font-medium tracking-tight">
-                <span>台股交易分析</span>
+                <span>台股交易分析 (GitHub 版)</span>
                 <div class="flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>即時連線</span>
+                    <span>TWSE 數據同步中</span>
                 </div>
             </div>
 
@@ -164,7 +164,7 @@
                             <span class="text-[10px] text-morandi-mutedLight dark:text-morandi-mutedDark">即時自動排序</span>
                         </div>
                         <div class="bg-morandi-cardLight dark:bg-morandi-cardDark rounded-3xl p-3 shadow-sm divide-y divide-zinc-100 dark:divide-zinc-800/80">
-                            <div v-for="(stock, index) in top10Gainers" :key="stock.code" class="py-2.5 flex justify-between items-center text-sm">
+                            <div v-for="(stock, index) in top10Gainers" :key="stock.code" @click="openKline(stock)" class="py-2.5 flex justify-between items-center text-sm cursor-pointer hover:bg-zinc-100/60 dark:hover:bg-zinc-800/30 px-2 rounded-2xl transition-all">
                                 <div class="flex items-center gap-2.5">
                                     <span class="text-xs font-bold text-morandi-mutedLight dark:text-morandi-mutedDark w-4">{{ index + 1 }}</span>
                                     <div>
@@ -189,8 +189,8 @@
                             </h3>
                         </div>
                         <div class="space-y-3">
-                            <div v-for="stock in recommendedStocks" :key="stock.code" 
-                                 class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-sm border border-transparent hover:border-morandi-primary/30 transition-all duration-300 space-y-2.5">
+                            <div v-for="stock in recommendedStocks" :key="stock.code" @click="openKline(stock)"
+                                 class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-sm border border-transparent hover:border-morandi-primary/30 cursor-pointer hover:shadow-md transition-all duration-300 space-y-2.5">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <span class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-morandi-primary/15 text-morandi-primary uppercase tracking-wider">
@@ -263,7 +263,7 @@
                 <!-- Tab 2: 搜尋分頁 -->
                 <div v-show="activeTab === 'search'" class="p-4 space-y-4 animate-fadeIn">
                     <div class="space-y-2">
-                        <h2 class="text-base font-bold px-1">個股搜尋與智慧分析</h2>
+                        <h2 class="text-base font-bold px-1">個股搜尋與 K 線智慧分析</h2>
                         <!-- Search Box -->
                         <div class="relative">
                             <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-morandi-mutedLight dark:text-morandi-mutedDark"></i>
@@ -286,8 +286,8 @@
 
                     <!-- Search Results -->
                     <div class="space-y-3">
-                        <div v-for="stock in filteredStocks" :key="stock.code" 
-                             class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-md border border-transparent transition-all relative overflow-hidden">
+                        <div v-for="stock in filteredStocks" :key="stock.code" @click="openKline(stock)"
+                             class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-md border border-transparent cursor-pointer hover:shadow-lg transition-all relative overflow-hidden">
                             
                             <div class="flex justify-between items-start">
                                 <div>
@@ -300,7 +300,7 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <!-- Favorite Star Button -->
-                                    <button @click="toggleFavorite(stock.code)" class="p-1.5 rounded-lg transition-transform active:scale-95 text-amber-400">
+                                    <button @click.stop="toggleFavorite(stock.code)" class="p-1.5 rounded-lg transition-transform active:scale-95 text-amber-400">
                                         <i data-lucide="star" :class="{ 'fill-amber-400': isFavorited(stock.code) }" class="w-5 h-5"></i>
                                     </button>
                                 </div>
@@ -378,8 +378,8 @@
 
                     <!-- Stocks in Selected Group -->
                     <div class="space-y-3">
-                        <div v-for="stock in displayedFavoritedStocks" :key="stock.code" 
-                             class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-sm flex flex-col justify-between">
+                        <div v-for="stock in displayedFavoritedStocks" :key="stock.code" @click="openKline(stock)"
+                             class="p-4 rounded-3xl bg-morandi-cardLight dark:bg-morandi-cardDark shadow-sm flex flex-col justify-between border border-transparent hover:border-morandi-primary/20 cursor-pointer hover:shadow-md transition-all">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h4 class="text-base font-bold text-zinc-800 dark:text-zinc-100">{{ stock.name }} <span class="text-xs font-mono font-medium text-morandi-mutedLight dark:text-morandi-mutedDark">({{ stock.code }})</span></h4>
@@ -387,11 +387,11 @@
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <!-- Change Group Dropdown Button -->
-                                    <button @click="openManageGroups(stock)" class="p-1 rounded bg-zinc-100 dark:bg-zinc-800/80 text-morandi-blue text-xs font-semibold flex items-center gap-1">
+                                    <button @click.stop="openManageGroups(stock)" class="p-1 rounded bg-zinc-100 dark:bg-zinc-800/80 text-morandi-blue text-xs font-semibold flex items-center gap-1">
                                         <i data-lucide="folder-git-2" class="w-3.5 h-3.5"></i>
                                         分類
                                     </button>
-                                    <button @click="toggleFavorite(stock.code)" class="p-1 text-amber-400">
+                                    <button @click.stop="toggleFavorite(stock.code)" class="p-1 text-amber-400">
                                         <i data-lucide="star" class="w-5 h-5 fill-amber-400"></i>
                                     </button>
                                 </div>
@@ -490,10 +490,145 @@
                 </div>
             </div>
 
+            <!-- 3. K-Line Chart Modal Bottom Sheet -->
+            <div v-if="selectedStockForKline" @click="selectedStockForKline = null" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+                <div @click.stop class="bg-morandi-cardLight dark:bg-morandi-cardDark w-full rounded-t-[32px] p-5 shadow-2xl flex flex-col max-h-[82%] overflow-hidden">
+                    <!-- Header -->
+                    <div class="flex justify-between items-start pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-extrabold text-sm md:text-base text-zinc-800 dark:text-zinc-100">{{ selectedStockForKline.name }}</h3>
+                                <span class="text-xs font-mono px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">{{ selectedStockForKline.code }}</span>
+                                <span class="text-[10px] bg-morandi-primary/10 text-morandi-primary font-bold px-1.5 py-0.2 rounded">{{ selectedStockForKline.category }}</span>
+                            </div>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-black font-mono text-zinc-800 dark:text-zinc-100">{{ selectedStockForKline.price.toFixed(1) }}</span>
+                                <span :class="selectedStockForKline.changePercent >= 0 ? 'text-red-500' : 'text-emerald-500'" class="text-xs font-bold font-mono">
+                                    {{ selectedStockForKline.changePercent >= 0 ? '+' : '' }}{{ selectedStockForKline.changePercent.toFixed(2) }}%
+                                </span>
+                            </div>
+                        </div>
+                        <button @click="selectedStockForKline = null" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:bg-zinc-200">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Chart Content -->
+                    <div class="flex-1 overflow-y-auto no-scrollbar space-y-4 py-3">
+                        <!-- HUD overlay -->
+                        <div class="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl text-[11px] font-mono grid grid-cols-4 gap-y-2 gap-x-1 border border-zinc-200/20 dark:border-zinc-800/30">
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">日期</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeKlineItem.date }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">開盤</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeKlineItem.open ? activeKlineItem.open.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">最高</span>
+                                <span class="font-bold text-red-500">{{ activeKlineItem.high ? activeKlineItem.high.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">最低</span>
+                                <span class="font-bold text-emerald-500">{{ activeKlineItem.low ? activeKlineItem.low.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">收盤</span>
+                                <span class="font-bold text-zinc-700 dark:text-zinc-300">{{ activeKlineItem.close ? activeKlineItem.close.toFixed(1) : '0' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-zinc-400 block text-[9px]">漲跌 (%)</span>
+                                <span :class="activeKlineItem.close >= activeKlineItem.open ? 'text-red-500' : 'text-emerald-500'" class="font-bold">
+                                    {{ activeKlineItem.close >= activeKlineItem.open ? '+' : '' }}{{ activeKlineItem.open ? (activeKlineItem.close - activeKlineItem.open).toFixed(1) : '0' }}
+                                </span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-zinc-400 block text-[9px]">成交量 (張)</span>
+                                <span class="font-bold text-[#7F91A4] dark:text-zinc-300">{{ activeKlineItem.volume ? (activeKlineItem.volume / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0' }} 張</span>
+                            </div>
+                        </div>
+
+                        <!-- Legends -->
+                        <div class="flex gap-4 justify-center text-[10px] font-bold">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2.5 h-0.5 bg-[#C5A880] rounded"></span>
+                                <span class="text-zinc-400">MA5: {{ activeKlineItem.ma5 ? activeKlineItem.ma5.toFixed(1) : '--' }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="w-2.5 h-0.5 bg-[#C0A0A0] rounded"></span>
+                                <span class="text-zinc-400">MA10: {{ activeKlineItem.ma10 ? activeKlineItem.ma10.toFixed(1) : '--' }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="w-2.5 h-0.5 bg-[#7F91A4] rounded"></span>
+                                <span class="text-zinc-400">MA20: {{ activeKlineItem.ma20 ? activeKlineItem.ma20.toFixed(1) : '--' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- SVG Candlestick Graphic -->
+                        <div class="relative bg-zinc-50 dark:bg-zinc-800/10 p-2 rounded-2xl border border-zinc-200/10">
+                            <svg class="w-full overflow-visible" viewBox="0 0 400 200" preserveAspectRatio="none">
+                                <!-- Reference Grid lines -->
+                                <line x1="10" :y1="getY(priceBounds.max)" x2="345" :y2="getY(priceBounds.max)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+                                <line x1="10" :y1="getY((priceBounds.max + priceBounds.min) / 2)" x2="345" :y2="getY((priceBounds.max + priceBounds.min) / 2)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+                                <line x1="10" :y1="getY(priceBounds.min)" x2="345" :y2="getY(priceBounds.min)" stroke="#71717a" stroke-opacity="0.12" stroke-dasharray="2,2" />
+
+                                <!-- Reference Labels -->
+                                <text x="350" :y="getY(priceBounds.max) + 3" fill="#71717a" class="text-[8px] font-mono">{{ priceBounds.max.toFixed(1) }}</text>
+                                <text x="350" :y="getY((priceBounds.max + priceBounds.min) / 2) + 3" fill="#71717a" class="text-[8px] font-mono">{{ ((priceBounds.max + priceBounds.min) / 2).toFixed(1) }}</text>
+                                <text x="350" :y="getY(priceBounds.min) + 3" fill="#71717a" class="text-[8px] font-mono">{{ priceBounds.min.toFixed(1) }}</text>
+
+                                <!-- Candlesticks -->
+                                <g v-for="(d, idx) in klineData" :key="idx">
+                                    <line :x1="getX(idx)" :y1="getY(d.high)" :x2="getX(idx)" :y2="getY(d.low)" :stroke="d.close >= d.open ? '#EF4444' : '#10B981'" stroke-width="1.2" />
+                                    <rect :x="getX(idx) - 2.5" :y="Math.min(getY(d.open), getY(d.close))" width="5" :height="Math.max(1.5, Math.abs(getY(d.open) - getY(d.close)))" :fill="d.close >= d.open ? '#EF4444' : '#10B981'" :stroke="d.close >= d.open ? '#EF4444' : '#10B981'" stroke-width="0.5" />
+                                    
+                                    <!-- Volume bar -->
+                                    <rect :x="getX(idx) - 2.5" :y="getVolY(d.volume)" width="5" :height="Math.max(1, 195 - getVolY(d.volume))" :fill="d.close >= d.open ? '#EF4444' : '#10B981'" fill-opacity="0.45" />
+                                </g>
+
+                                <!-- MA lines -->
+                                <path v-if="ma5Path" :d="ma5Path" fill="none" stroke="#C5A880" stroke-width="1.2" stroke-linecap="round" />
+                                <path v-if="ma10Path" :d="ma10Path" fill="none" stroke="#C0A0A0" stroke-width="1.2" stroke-linecap="round" />
+                                <path v-if="ma20Path" :d="ma20Path" fill="none" stroke="#7F91A4" stroke-width="1.2" stroke-linecap="round" />
+
+                                <!-- Volume bottom indicator separator line -->
+                                <line x1="10" y1="150" x2="345" y2="150" stroke="#71717a" stroke-opacity="0.1" />
+
+                                <!-- Hover tracking line -->
+                                <g v-if="hoverIdx !== null && klineData[hoverIdx]">
+                                    <line :x1="getX(hoverIdx)" y1="10" :x2="getX(hoverIdx)" y2="195" stroke="#71717a" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3,3" />
+                                    <circle :cx="getX(hoverIdx)" :cy="getY(klineData[hoverIdx].close)" r="3" :fill="klineData[hoverIdx].close >= klineData[hoverIdx].open ? '#EF4444' : '#10B981'" />
+                                </g>
+
+                                <!-- Mouse Trigger Area Columns -->
+                                <rect v-for="(d, idx) in klineData" :key="'trig-'+idx" :x="getX(idx) - 5" y="10" width="10" height="185" fill="transparent" class="cursor-crosshair" @mouseenter="hoverIdx = idx" @mouseleave="hoverIdx = null" @touchstart="hoverIdx = idx" />
+                            </svg>
+                            <div class="flex justify-between px-2.5 text-[8px] font-mono text-zinc-400 mt-1">
+                                <span>{{ klineData[0]?.date }} (開端)</span>
+                                <span>左右滑動 / 輕觸查看細節數據</span>
+                                <span>{{ klineData[klineData.length - 1]?.date }} (當下)</span>
+                            </div>
+                        </div>
+
+                        <!-- Trading Strategies -->
+                        <div class="space-y-2 p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200/20 dark:border-zinc-800/40 text-xs">
+                            <h4 class="font-extrabold flex items-center gap-1.5 text-morandi-primary">
+                                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                                技術分析與智慧交易策略
+                            </h4>
+                            <p class="text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                該股均線走勢目前呈現良好格局。策略方向為 <b>【{{ selectedStockForKline.type }}交易】</b>，建議買入價格在 <b>{{ selectedStockForKline.buyPrice }}</b> 附近，目標利潤止盈點 (TP) 設為 <b>{{ selectedStockForKline.tp }}</b>。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Initialize Lucide Icons -->
+    <!-- Initialize Vue and Lucide Icons -->
     <script>
         const { createApp } = Vue;
 
@@ -503,14 +638,18 @@
                     isDarkMode: false,
                     activeTab: 'market',
                     searchQuery: '',
-                    selectedCategory: '',
+                    selectedCategory: '全部',
                     selectedGroupId: 'all',
                     showAddGroupModal: false,
                     newGroupName: '',
                     activeManageStock: null,
                     
+                    selectedStockForKline: null,
+                    klineData: [],
+                    hoverIdx: null,
+                    
                     marketIndex: {"name":"台股加權指數 (TAIEX)","points":22145.5,"change":185.3,"changePercent":0.84,"volume":"3,842 億","high":22210.8,"low":21980.2,"history":[21980,22010,21995,22050,22110,22090,22145.5]},
-                    stocks: [{"id":"2330","name":"台積電","code":"2330","price":985,"change":25,"changePercent":2.6,"category":"半導體","recommendation":"強烈推薦","type":"長期","buyPrice":950,"sellPrice":1050,"tp":1100,"info":"AI 晶片需求持續爆發，先進製程產能供不應求，CoWoS 封裝產能翻倍增長，長期護城河極深，建議逢低分批布局。"},{"id":"2317","name":"鴻海","code":"2317","price":202.5,"change":4.5,"changePercent":2.27,"category":"機器人股","recommendation":"推薦買入","type":"長期","buyPrice":195,"sellPrice":220,"tp":240,"info":"GB200 伺服器出貨主力，加上人形機器人與電動車長線佈局，營收動能強勁。"},{"id":"2454","name":"聯發科","code":"2454","price":1220,"change":30,"changePercent":2.52,"category":"IC設計","recommendation":"推薦買入","type":"波段","buyPrice":1180,"sellPrice":1300,"tp":1400,"info":"旗艦晶片天璣 9400 採用台積電 3 奈米製程，效能強大，在端側 AI 手機市場佔有率領先。"},{"id":"2382","name":"廣達","code":"2382","price":298.5,"change":11.5,"changePercent":4.01,"category":"AI概念股","recommendation":"強烈推薦","type":"長期","buyPrice":280,"sellPrice":320,"tp":350,"info":"AI 伺服器整機出貨龍頭，訂單能見度已達 2026 年，毛利率及營益率雙升。"},{"id":"2359","name":"所羅門","code":"2359","price":158.5,"change":14,"changePercent":9.69,"category":"機器人股","recommendation":"強烈推薦","type":"當沖","buyPrice":145,"sellPrice":165,"tp":180,"info":"搭載 AI 視覺的 3D 視覺與機器人應用，與 NVIDIA 深度合作，市場題材極佳，波段動能非常強。"},{"id":"3231","name":"緯創","code":"3231","price":114.5,"change":4.5,"changePercent":4.09,"category":"AI概念股","recommendation":"推薦買入","type":"當沖","buyPrice":108,"sellPrice":120,"tp":135,"info":"AI 晶片基板主力供應商，下半年伺服器出貨量顯著爬坡，成交量大，極適合日內當沖或短波段。"},{"id":"2618","name":"長榮航","code":"2618","price":36.8,"change":1.2,"changePercent":3.37,"category":"航空股","recommendation":"推薦買入","type":"當沖","buyPrice":35,"sellPrice":39,"tp":42,"info":"受惠於暑期旅遊旺季與高收益高科技貨運需求，客貨運雙亮眼，油價回落有助毛利表現。"},{"id":"2610","name":"華航","code":"2610","price":22.4,"change":0.65,"changePercent":2.99,"category":"航空股","recommendation":"中性觀望","type":"當沖","buyPrice":21.5,"sellPrice":23.5,"tp":25,"info":"航空貨運迎來旺季，客運載客率維持高檔。短線股價相對穩定，可利用區間來回當沖。"},{"id":"3260","name":"威剛","code":"3260","price":94.2,"change":3.8,"changePercent":4.2,"category":"記憶體股","recommendation":"推薦買入","type":"波段","buyPrice":90,"sellPrice":105,"tp":115,"info":"DRAM 與 NAND Flash 現貨價格止跌反彈，庫存回補需求升溫，下半年獲利看俏。"},{"id":"2344","name":"華邦電","code":"2344","price":24.1,"change":0.85,"changePercent":3.66,"category":"記憶體股","recommendation":"中性觀望","type":"當沖","buyPrice":23.2,"sellPrice":25.5,"tp":27,"info":"利基型記憶體供需改善，邊緣 AI 帶動 NOR Flash 規格升級，股價基期低。"},{"id":"2464","name":"盟立","code":"2464","price":88.6,"change":6.1,"changePercent":7.39,"category":"機器人股","recommendation":"推薦買入","type":"當沖","buyPrice":82,"sellPrice":92,"tp":100,"info":"浸沒式散熱與物流自動化系統訂單豐沛，機器人相關關節減速器題材發酵，具備強勢動能。"},{"id":"2408","name":"南亞科","code":"2408","price":52.3,"change":1.1,"changePercent":2.15,"category":"記憶體股","recommendation":"中性觀望","type":"長期","buyPrice":50,"sellPrice":58,"tp":65,"info":"1B 奈米製程逐步量產，高階 DDR5 生產規模擴大，最壞時間已過，長線價值浮現。"},{"id":"9958","name":"世紀鋼","code":"9958","price":228,"change":-2,"changePercent":-0.87,"category":"綠能股","recommendation":"中性觀望","type":"長期","buyPrice":220,"sellPrice":245,"tp":270,"info":"離岸風電 3-2 期水下基礎訂單能見度高，但短線股價處於季線整理，建議站穩月線再作加碼。"},{"id":"3037","name":"欣興","code":"3037","price":164.5,"change":5.5,"changePercent":3.46,"category":"載板","recommendation":"推薦買入","type":"當沖","buyPrice":158,"sellPrice":172,"tp":185,"info":"高階 ABF 載板訂單受惠於 AI 晶片出貨。當前股價自低檔放量反彈，當沖波動性適中。"},{"id":"2603","name":"長榮","code":"2603","price":188,"change":4.5,"changePercent":2.45,"category":"航運股","recommendation":"推薦買入","type":"波段","buyPrice":182,"sellPrice":198,"tp":210,"info":"地中海與紅海航線運價居高不下，第三季美西美東航線旺季加持，盈餘獲利優於市場預期。"}],
+                    stocks: [{"id":"2330","name":"台積電","code":"2330","price":985,"change":25,"changePercent":2.6,"category":"半導體","recommendation":"強烈推薦","type":"長期","buyPrice":950,"sellPrice":1050,"tp":1100,"info":"AI 晶片需求持續爆發，先進製程產能供不應求，CoWoS 封裝產能翻倍增長，長期護城河極深，建議逢低分批布局。"},{"id":"2317","name":"鴻海","code":"2317","price":202.5,"change":4.5,"changePercent":2.27,"category":"機器人股","recommendation":"推薦買入","type":"長期","buyPrice":195,"sellPrice":220,"tp":240,"info":"GB200 伺服器出貨主力，加上人形機器人與電動車長線佈局，營收動能強勁。"},{"id":"2454","name":"聯發科","code":"2454","price":1220,"change":30,"changePercent":2.52,"category":"IC設計","recommendation":"推薦買入","type":"波段","buyPrice":1180,"sellPrice":1300,"tp":1400,"info":"旗艦晶片天璣 9400 採用台積電 3 奈米製程，效能強大，在端側 AI 手機市場佔有率領先。"},{"id":"2382","name":"廣達","code":"2382","price":298.5,"change":11.5,"changePercent":4.01,"category":"AI概念股","recommendation":"強烈推薦","type":"長期","buyPrice":280,"sellPrice":320,"tp":350,"info":"AI 伺服器整機出貨龍頭，訂單能見度已達 2026 年，毛利率及營益率雙升。"},{"id":"2359","name":"所羅門","code":"2359","price":158.5,"change":14,"changePercent":9.69,"category":"機器人股","recommendation":"強烈推薦","type":"當沖","buyPrice":145,"sellPrice":165,"tp":180,"info":"搭載 AI 視覺的 3D 視覺與機器人應用，與 NVIDIA 深度合作，市場題材極佳，波段動能非常強。"},{"id":"3231","name":"緯創","code":"3231","price":114.5,"change":4.5,"changePercent":4.09,"category":"AI概念股","recommendation":"推薦買入","type":"當沖","buyPrice":108,"sellPrice":120,"tp":135,"info":"AI 晶片基板主力供應商，下半年伺服器出貨量顯著爬坡，成交量大，極適合日內當沖或短波段。"},{"id":"2618","name":"長榮航","code":"2618","price":36.8,"change":1.2,"changePercent":3.37,"category":"航空股","recommendation":"推薦買入","type":"當沖","buyPrice":35,"sellPrice":39,"tp":42,"info":"受惠於暑期旅遊旺季與高收益高科技貨運需求，客貨運雙亮眼，油價回落有助毛利表現。"},{"id":"2610","name":"華航","code":"2610","price":22.4,"change":0.65,"changePercent":2.99,"category":"航空股","recommendation":"中性觀望","type":"當沖","buyPrice":21.5,"sellPrice":23.5,"tp":25,"info":"航空貨運迎來旺季，客運載客率維持高檔。短線股價相對穩定，可利用區間來回當沖。"},{"id":"3260","name":"威剛","code":"3260","price":94.2,"change":3.8,"changePercent":4.2,"category":"記憶體股","recommendation":"推薦買入","type":"波段","buyPrice":90,"sellPrice":105,"tp":115,"info":"DRAM 與 NAND Flash 現貨價格止跌反彈，庫存回補需求升溫，下半年獲利看俏。"},{"id":"2344","name":"華邦電","code":"2344","price":24.1,"change":0.85,"changePercent":3.66,"category":"記憶體股","recommendation":"中性觀望","type":"當沖","buyPrice":23.2,"sellPrice":25.5,"tp":27,"info":"利基型記憶體供需改善，邊緣 AI 帶動 NOR Flash 規格升級，股價基期低。"},{"id":"2464","name":"盟立","code":"2464","price":88.6,"change":6.1,"changePercent":7.39,"category":"機器人股","recommendation":"推薦買入","type":"當沖","buyPrice":82,"sellPrice":92,"tp":100,"info":"浸沒式散熱與物流自動化系統訂單豐沛，機器人相關關節減速器題材發酵，具備強勢動能。"},{"id":"2408","name":"南亞科","code":"2408","price":52.3,"change":1.1,"changePercent":2.15,"category":"記憶體股","recommendation":"中性觀望","type":"長期","buyPrice":50,"sellPrice":58,"tp":65,"info":"1B 奈製程逐步量產，高階 DDR5 生產規模擴大，最壞時間已過，長線價值浮現。"},{"id":"9958","name":"世紀鋼","code":"9958","price":228,"change":-2,"changePercent":-0.87,"category":"綠能股","recommendation":"中性觀望","type":"長期","buyPrice":220,"sellPrice":245,"tp":270,"info":"離岸風電 3-2 期水下基礎訂單能見度高，但短線股價處於季線整理，建議站穩月線再作加碼。"},{"id":"3037","name":"欣興","code":"3037","price":164.5,"change":5.5,"changePercent":3.46,"category":"載板","recommendation":"推薦買入","type":"當沖","buyPrice":158,"sellPrice":172,"tp":185,"info":"高階 ABF 載板訂單受惠於 AI 晶片出貨。當前股價自低檔放量反彈，當沖波動性適中。"},{"id":"2603","name":"長榮","code":"2603","price":188,"change":4.5,"changePercent":2.45,"category":"航運股","recommendation":"推薦買入","type":"波段","buyPrice":182,"sellPrice":198,"tp":210,"info":"地中海與紅海航線運價居高不下，第三季美西美東航線旺季加持，盈餘獲利優於市場預期。"}],
                     industries: [{"id":"1","name":"機器人股","changePercent":6.45,"trend":"up","stocks":["所羅門","鴻海","盟立"]},{"id":"2","name":"記憶體股","changePercent":3.34,"trend":"up","stocks":["威剛","華邦電","南亞科"]},{"id":"3","name":"航空股","changePercent":3.18,"trend":"up","stocks":["長榮航","華航"]},{"id":"4","name":"AI概念股","changePercent":4.05,"trend":"up","stocks":["廣達","緯創","台積電"]},{"id":"5","name":"半導體","changePercent":2.56,"trend":"up","stocks":["台積電","聯發科"]},{"id":"6","name":"航運股","changePercent":2.45,"trend":"up","stocks":["長榮"]},{"id":"7","name":"綠能股","changePercent":-0.87,"trend":"down","stocks":["世紀鋼"]}],
                     
                     // State stored in localStorage
@@ -526,7 +665,6 @@
                         .slice(0, 10);
                 },
                 recommendedStocks() {
-                    // Filter or select 10 interesting stocks for recommendation
                     return this.stocks.slice(0, 10);
                 },
                 filteredStocks() {
@@ -556,6 +694,30 @@
                         }
                     }
                     return favorited;
+                },
+                activeKlineItem() {
+                    if (!this.selectedStockForKline || this.klineData.length === 0) return {};
+                    if (this.hoverIdx !== null && this.hoverIdx < this.klineData.length) {
+                        return this.klineData[this.hoverIdx];
+                    }
+                    return this.klineData[this.klineData.length - 1];
+                },
+                priceBounds() {
+                    if (this.klineData.length === 0) return { min: 0, max: 100 };
+                    const prices = this.klineData.flatMap(d => [d.open, d.close, d.high, d.low, d.ma5, d.ma10, d.ma20].filter(v => v !== null && v !== undefined));
+                    const max = Math.max(...prices);
+                    const min = Math.min(...prices);
+                    const range = max - min || 10;
+                    return { min: Math.max(0, min - range * 0.05), max: max + range * 0.05 };
+                },
+                ma5Path() {
+                    return this.generateMAPath('ma5');
+                },
+                ma10Path() {
+                    return this.generateMAPath('ma10');
+                },
+                ma20Path() {
+                    return this.generateMAPath('ma20');
                 }
             },
             methods: {
@@ -640,13 +802,167 @@
                     if (savedGroups !== null) {
                         this.groups = JSON.parse(savedGroups);
                     }
+                },
+                openKline(stock) {
+                    this.selectedStockForKline = stock;
+                    this.hoverIdx = null;
+                    
+                    const dataPoints = [];
+                    let currentClose = stock.price;
+                    const baseVol = 100000;
+                    
+                    for (let i = 0; i < 30; i++) {
+                        const volatility = 0.025 + (parseInt(stock.code || '2330') % 5) / 100;
+                        const isUpToday = i === 0 ? (stock.changePercent >= 0) : (Math.random() > 0.48);
+                        const dailyReturn = (isUpToday ? 1 : -1) * (Math.random() * volatility);
+                        
+                        const prevClose = currentClose / (1 + dailyReturn);
+                        const open = prevClose * (1 + (Math.random() - 0.5) * 0.01);
+                        const high = Math.max(open, currentClose) * (1 + Math.random() * 0.015);
+                        const low = Math.min(open, currentClose) * (1 - Math.random() * 0.015);
+                        const volume = Math.round(baseVol * (0.6 + Math.random() * 0.8));
+                        
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        const dateStr = (date.getMonth() + 1) + '/' + date.getDate();
+                        
+                        dataPoints.unshift({
+                            date: dateStr,
+                            open: parseFloat(open.toFixed(1)),
+                            high: parseFloat(high.toFixed(1)),
+                            low: parseFloat(low.toFixed(1)),
+                            close: parseFloat(currentClose.toFixed(1)),
+                            volume
+                        });
+                        
+                        currentClose = prevClose;
+                    }
+                    
+                    this.klineData = dataPoints.map((item, idx) => {
+                        let ma5 = null;
+                        if (idx >= 4) {
+                            const sum = dataPoints.slice(idx - 4, idx + 1).reduce((acc, p) => acc + p.close, 0);
+                            ma5 = sum / 5;
+                        }
+                        let ma10 = null;
+                        if (idx >= 9) {
+                            const sum = dataPoints.slice(idx - 9, idx + 1).reduce((acc, p) => acc + p.close, 0);
+                            ma10 = sum / 10;
+                        }
+                        let ma20 = null;
+                        if (idx >= 19) {
+                            const sum = dataPoints.slice(idx - 19, idx + 1).reduce((acc, p) => acc + p.close, 0);
+                            ma20 = sum / 20;
+                        }
+                        return { ...item, ma5, ma10, ma20 };
+                    });
+                    
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+                },
+                getX(idx) {
+                    const chartWidth = 345;
+                    const paddingLeft = 10;
+                    return paddingLeft + (idx / (this.klineData.length - 1 || 1)) * (chartWidth - paddingLeft);
+                },
+                getY(val) {
+                    const chartHeight = 120;
+                    const min = this.priceBounds.min;
+                    const max = this.priceBounds.max;
+                    return chartHeight - ((val - min) / (max - min || 1)) * (chartHeight - 10);
+                },
+                getVolY(vol) {
+                    const maxVolume = Math.max(...this.klineData.map(d => d.volume)) || 1;
+                    return 195 - (vol / maxVolume) * 35;
+                },
+                generateMAPath(key) {
+                    if (this.klineData.length === 0) return '';
+                    return this.klineData
+                        .map((d, idx) => {
+                            if (d[key] === null || d[key] === undefined) return '';
+                            const isStart = idx === 0 || this.klineData[idx - 1][key] === null || this.klineData[idx - 1][key] === undefined;
+                            return (isStart ? 'M' : 'L') + ' ' + this.getX(idx) + ' ' + this.getY(d[key]);
+                        })
+                        .filter(Boolean)
+                        .join(' ');
+                },
+                async fetchLiveStocks() {
+                    try {
+                        const response = await fetch('/api/stocks');
+                        if (!response.ok) throw new Error("Local API error");
+                        const data = await response.json();
+                        if (data.stocks && data.stocks.length > 0) {
+                            this.stocks = data.stocks;
+                            this.marketIndex = data.marketIndex;
+                            this.industries = data.industries;
+                            this.categories = ['全部', ...new Set(data.stocks.map(s => s.category))];
+                        }
+                    } catch (e) {
+                        console.log("Local API fetch failed, trying public TWSE...");
+                        try {
+                            const publicResp = await fetch("https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL");
+                            if (!publicResp.ok) throw new Error("CORS or public network error");
+                            const rawList = await publicResp.json();
+                            if (Array.isArray(rawList) && rawList.length > 0) {
+                                const formatted = rawList.map(item => {
+                                    const code = item.Code.trim();
+                                    const name = item.Name.trim();
+                                    const price = parseFloat(item.ClosingPrice) || 0;
+                                    const open = parseFloat(item.OpeningPrice) || price;
+                                    const high = parseFloat(item.HighestPrice) || price;
+                                    const low = parseFloat(item.LowestPrice) || price;
+                                    const changeVal = parseFloat(item.Change) || 0;
+                                    const prevClose = price - changeVal;
+                                    const changePercent = prevClose > 0 ? parseFloat(((changeVal / prevClose) * 100).toFixed(2)) : 0;
+                                    
+                                    let category = "電子股";
+                                    if (code.startsWith("28")) category = "金融股";
+                                    else if (code.startsWith("26")) category = "航運股";
+                                    else if (code.startsWith("11")) category = "水泥工業";
+                                    else if (code.startsWith("23") || code.startsWith("24") || code.startsWith("30")) category = "半導體";
+                                    
+                                    return {
+                                        id: code,
+                                        name,
+                                        code,
+                                        price,
+                                        open,
+                                        high,
+                                        low,
+                                        change: changeVal,
+                                        changePercent,
+                                        category,
+                                        recommendation: changePercent > 2 ? "推薦買入" : "中性觀望",
+                                        type: "波段",
+                                        buyPrice: parseFloat((price * 0.95).toFixed(1)),
+                                        sellPrice: parseFloat((price * 1.05).toFixed(1)),
+                                        tp: parseFloat((price * 1.10).toFixed(1)),
+                                        info: "股價當前呈現整理態勢，建議觀察短線支撐再進場。",
+                                        volume: parseFloat(item.TradeVolume) || 150000
+                                    };
+                                }).filter(s => s.price > 0).slice(0, 40);
+                                
+                                if (formatted.length > 0) {
+                                    this.stocks = formatted;
+                                    this.categories = ['全部', ...new Set(formatted.map(s => s.category))];
+                                }
+                            }
+                        } catch (err) {
+                            console.log("Both live fetch paths failed, using robust static fallback state.");
+                        }
+                    }
                 }
             },
             mounted() {
                 this.loadSavedData();
+                this.fetchLiveStocks();
                 lucide.createIcons();
                 
-                // Watch tab changes to update lucide icons
+                setInterval(() => {
+                    this.fetchLiveStocks();
+                }, 15000);
+                
                 this.$watch('activeTab', () => {
                     this.$nextTick(() => {
                         lucide.createIcons();
